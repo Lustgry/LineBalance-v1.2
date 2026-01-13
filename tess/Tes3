@@ -1,0 +1,138 @@
+LCR_Algoritma;
+
+const
+  MAX = 100;
+
+var
+  tugas_waktu: array[1..MAX] of real;
+  tugas_temp: real;
+  stasiun_load: array[1..MAX] of real;
+  
+  jml_tugas, jml_stasiun, i, j, K: integer;
+  Ws: real;
+  
+  (* Variabel bantu untuk validasi *)
+  valid_ws: boolean;
+  max_tugas: real;
+  
+  (* Variabel hitungan akhir *)
+  total_eff, line_eff, bd, si, total_idle_sq, idle: real;
+
+begin
+  (* INPUT & Pemastian *)
+  
+  (* Input data tugas dulu (agar bisa di-sort) *)
+  write('Masukkan Jumlah Tugas: '); readln(jml_tugas);
+  for i := 1 to jml_tugas do
+  begin
+    write('Waktu tugas ke-', i, ': '); readln(tugas_waktu[i]);
+  end;
+
+  (* LOOP VALIDASI (Panah balik ke atas jika t_i > Ws) *)
+  repeat
+    valid_ws := true;
+    
+    (* 1. Input Waktu Siklus *)
+    write('Masukkan Waktu Siklus (Ws): '); readln(Ws);
+    
+    (* 2. Pengurutan Tugas (Sorting Descending) *)
+    (* Flowchart: Dilakukan setelah Input Ws, sebelum Cek *)
+    for i := 1 to jml_tugas - 1 do
+      for j := i + 1 to jml_tugas do
+        if tugas_waktu[j] > tugas_waktu[i] then
+        begin
+          tugas_temp := tugas_waktu[i];
+          tugas_waktu[i] := tugas_waktu[j];
+          tugas_waktu[j] := tugas_temp;
+        end;
+    
+    (* 3. Cek it <= Ws (y/n) *)
+    (* Kita ambil tugas terbesar (indeks 1 setelah sort) untuk pengecekan *)
+    if tugas_waktu[1] > Ws then
+    begin
+      (* Branch NO: Batasi waktu input <= Ws -> Kembali ke Input *)
+      writeln('ERROR: Tugas terbesar (', tugas_waktu[1]:0:2, ') melebihi Ws!');
+      writeln('Silakan input Ws yang lebih besar.');
+      valid_ws := false; (* Memicu loop ulang *)
+    end;
+    
+  until valid_ws = true; (* Branch YES: Lanjut *)
+
+  (* BAGIAN 2: INISIASI *)
+  
+  (* Inisiasi Tugas K=1 (Stasiun pertama) *)
+  K := 1;
+  stasiun_load[K] := 0;
+
+  (* Loop: Masih ada tugas di dalam daftar? *)
+  for i := 1 to jml_tugas do
+  begin
+    (* Mengambil Tugas (i) teratas *)
+    
+    (* Menempatkan & Menjumlahkan waktu (Simulasi) *)
+    (* Apakah Total it <= Ws ? *)
+    if (stasiun_load[K] + tugas_waktu[i]) <= Ws then
+    begin
+      (* YES: Menambahkan tugas ke Stasiun ini *)
+      stasiun_load[K] := stasiun_load[K] + tugas_waktu[i];
+    end
+    else
+    begin
+      (* NO: Membuat Stasiun Baru *)
+      K := K + 1;
+      
+      (* Reset Waktu terpakai (untuk stasiun baru) *)
+      stasiun_load[K] := 0; 
+      
+      (* Panah kembali ke "Mengambil Tugas" *)
+      (* Artinya tugas (i) ini dimasukkan ke stasiun yang baru di-reset *)
+      stasiun_load[K] := stasiun_load[K] + tugas_waktu[i];
+    end;
+  end;
+  
+  (* Output Jumlah Stasiun Terbentuk *)
+  jml_stasiun := K;
+  
+  total_eff := 0;
+  total_idle_sq := 0;
+  
+  writeln;
+  writeln('HASIL PERHITUNGAN ');
+  
+  for i := 1 to jml_stasiun do
+  begin
+    (* Menghitung eff stasiun *)
+    (* Rumus: (Jumlah it / Ws) * 100 *)
+    stasiun_load[i] := stasiun_load[i]; (* ini adalah Jumlah it *)
+    
+    (* Menghitung Idle time stasiun = Ws - Total it *)
+    idle := Ws - stasiun_load[i];
+    
+    (* Akumulasi untuk SI *)
+    total_idle_sq := total_idle_sq + sqr(idle);
+    
+    (* Akumulasi Total Load untuk Line Eff *)
+    total_eff := total_eff + stasiun_load[i];
+    
+    writeln('Stasiun ', i, ' Load: ', stasiun_load[i]:0:2, ' (Idle: ', idle:0:2, ')');
+  end;
+
+  (* Menghitung Line Eff *)
+  line_eff := (total_eff / (jml_stasiun * Ws)) * 100;
+
+  (* Menghitung Balance Delay (BD) *)
+  bd := 100 - line_eff;
+
+  (* Menghitung Smoothing Index (SI) *)
+  si := sqrt(total_idle_sq);
+
+  (* Menampilkan Hasil *)
+  writeln('---------------------------');
+  writeln('Jumlah Stasiun   : ', jml_stasiun);
+  writeln('Line Efficiency  : ', line_eff:0:2, '%');
+  writeln('Balance Delay    : ', bd:0:2, '%');
+  writeln('Smoothing Index  : ', si:0:2);
+
+  writeln('Selesai.');
+  readln;
+end.

@@ -1,0 +1,91 @@
+Mulai
+uses crt, math; (* Math untuk fungsi Akar/Sqrt *)
+
+const MAX = 50;
+
+var
+  tugas: array[1..MAX] of real;     (* Menyimpan waktu tugas *)
+  stasiun: array[1..MAX] of real;   (* Menyimpan total waktu per stasiun *)
+  n, i, j, jmlStasiun: integer;
+  Ws, temp, totalWaktu, idle, SI, LE: real;
+
+begin
+  clrscr;
+  writeln('LCR');
+
+  (* 1. INPUT (Imput Waktu Siklus & Tugas) *)
+  write('Jumlah Tugas: '); readln(n);
+  write('Waktu Siklus (Ws): '); readln(Ws);
+
+  for i := 1 to n do
+  begin
+    write('Waktu Tugas ', i, ': '); readln(tugas[i]);
+    (* Validasi Flowchart: Cek it <= Ws *)
+    if tugas[i] > Ws then
+    begin
+      writeln('Error: Tugas terlalu besar dari Ws!');
+      readln; exit; (* Berhenti jika tidak valid *)
+    end;
+  end;
+
+  (* 2. PENGURUTAN (Pengurutan Tugas dari terbesar) *)
+  for i := 1 to n-1 do
+    for j := i+1 to n do
+      if tugas[j] > tugas[i] then
+      begin
+        temp := tugas[i];
+        tugas[i] := tugas[j];
+        tugas[j] := temp;
+      end;
+
+  (* 3. PROSES STASIUN (Membuat Stasiun & Penempatan)*)
+  jmlStasiun := 1;
+  stasiun[1] := 0;
+
+  for i := 1 to n do
+  begin
+    (*Apakah Total it <= Ws? *)
+    if (stasiun[jmlStasiun] + tugas[i]) <= Ws then
+    begin
+      (* Yes: Masukkan ke stasiun ini *)
+      stasiun[jmlStasiun] := stasiun[jmlStasiun] + tugas[i];
+    end
+    else
+    begin
+      (* No: Membuat Stasiun Baru *)
+      jmlStasiun := jmlStasiun + 1;
+      stasiun[jmlStasiun] := tugas[i]; (* Reset & Masukkan *)
+    end;
+  end;
+
+  (4. HITUNG & TAMPILKAN HASIL + DIAGRAM )
+  writeln;
+  writeln('HASIL & DIAGRAM BATANG ');
+  
+  SI := 0; 
+  totalWaktu := 0;
+
+  for i := 1 to jmlStasiun do
+  begin
+    (* Hitung Idle *)
+    idle := Ws - stasiun[i];
+    SI := SI + sqr(idle);        (* Bagian dari rumus SI *)
+    totalWaktu := totalWaktu + stasiun[i];
+
+    (* Output Stasiun & Diagram Batang *)
+    write('Stasiun ', i, ' (', stasiun[i]:0:1, '/', Ws:0:1, ') : ');
+    
+    (* Menggambar batang pagar # sesuai beban kerja *)
+    for j := 1 to round(stasiun[i]) do write('#'); 
+    writeln;
+  end;
+
+  (* Rumus Akhir *)
+  LE := (totalWaktu / (jmlStasiun * Ws)) * 100; (* Line Efficiency *)
+  SI := sqrt(SI);                               (* Smoothing Index *)
+
+  writeln;
+  writeln('Line Efficiency (LE) : ', LE:0:2, '%');
+  writeln('Smoothing Index (SI) : ', SI:0:2);
+  readln;
+end.

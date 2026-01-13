@@ -1,0 +1,77 @@
+algoritma LCR;
+
+const
+  MAX = 50;
+
+var
+  tugas_waktu: array[1..MAX] of real;   // Menyimpan waktu tiap tugas
+  stasiun_load: array[1..MAX] of real;  // Menyimpan total waktu di tiap stasiun
+  jml_tugas, jml_stasiun, i, j: integer;
+  Ws, temp, total_idle_sq, SI: real;
+
+begin
+  (* --- 1. INPUT --- *)
+  write('Masukkan Waktu Siklus (Ws): '); readln(Ws);
+  write('Masukkan Jumlah Tugas: '); readln(jml_tugas);
+
+  for i := 1 to jml_tugas do
+  begin
+    write('Waktu tugas ke-', i, ': '); readln(tugas_waktu[i]);
+    (* Validasi Flowchart: Cek it <= Ws *)
+    if tugas_waktu[i] > Ws then
+    begin
+      writeln('Error: Tugas lebih besar dari Ws!');
+      halt; // Stop program
+    end;
+  end;
+
+  (* --- 2. SORTING (Metode LCR) --- *)
+  (* Flowchart: Pengurutan Tugas (Descending) *)
+  for i := 1 to jml_tugas-1 do
+    for j := i+1 to jml_tugas do
+      if tugas_waktu[j] > tugas_waktu[i] then
+      begin
+        temp := tugas_waktu[i];
+        tugas_waktu[i] := tugas_waktu[j];
+        tugas_waktu[j] := temp;
+      end;
+
+  (* ALOKASI TUGAS*)
+  (* Loop pengambilan tugas & Cek Total it <= Ws *)
+  
+  jml_stasiun := 1;
+  stasiun_load[1] := 0; (* Inisialisasi stasiun 1 *)
+
+  for i := 1 to jml_tugas do
+  begin
+    (* Cek apakah tugas muat di stasiun saat ini? *)
+    if (stasiun_load[jml_stasiun] + tugas_waktu[i]) <= Ws then
+    begin
+      (* YES: Masukkan ke stasiun ini *)
+      stasiun_load[jml_stasiun] := stasiun_load[jml_stasiun] + tugas_waktu[i];
+    end
+    else
+    begin
+      (* NO: Buat Stasiun Baru *)
+      jml_stasiun := jml_stasiun + 1;
+      stasiun_load[jml_stasiun] := tugas_waktu[i]; (* Isi langsung dengan tugas ini *)
+    end;
+  end;
+
+  (PERHITUNGAN AKHIR (SI & EFF))
+
+  total_idle_sq := 0;
+  
+  writeln('--- HASIL ---');
+  writeln('Total Stasiun: ', jml_stasiun);
+  
+  for i := 1 to jml_stasiun do
+  begin
+    writeln('Stasiun ', i, ' Load: ', stasiun_load[i]:0:2);
+    (* Menghitung Smoothing Index component *)
+    total_idle_sq := total_idle_sq + sqr(Ws - stasiun_load[i]); 
+  end;
+
+  SI := sqrt(total_idle_sq);
+  writeln('Smoothing Index (SI): ', SI:0:2);
+end.
