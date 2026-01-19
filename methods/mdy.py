@@ -15,7 +15,7 @@ def solve_mdy(tasks, cycle_time):
         for task in sorted_tasks:
             if task['Task'] in assigned: continue
             
-            preds_ok = all(p in assigned for p in task['Predecessors'])
+            preds_ok = all(p in assigned for p in task['Precedence'])
             time_ok = task['Time'] <= current_station['time_left']
             
             if preds_ok and time_ok:

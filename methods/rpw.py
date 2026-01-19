@@ -3,7 +3,7 @@ def get_successors(task_id, all_tasks, depth=0):
     if depth > 50: return [] 
     succs = []
     for t in all_tasks:
-        if task_id in t['Predecessors']:
+        if task_id in t['Precedence']:
             succs.append(t['Task'])
             succs.extend(get_successors(t['Task'], all_tasks, depth+1))
     return list(set(succs))
@@ -35,7 +35,7 @@ def solve_rpw(tasks, cycle_time):
         for task in sorted_tasks:
             if task['Task'] in assigned: continue
             
-            preds_ok = all(p in assigned for p in task['Predecessors'])
+            preds_ok = all(p in assigned for p in task['Precedence'])
             time_ok = task['Time'] <= current_station['time_left']
             
             if preds_ok and time_ok:
@@ -48,7 +48,7 @@ def solve_rpw(tasks, cycle_time):
         if not added:
             # Jika stasiun kosong tapi tidak bisa isi task -> DEADLOCK
             if len(current_station['tasks']) == 0:
-                return "Error: Tidak ada task yang bisa masuk (Cek Predecessor/Cycle Time)"
+                return "Error: Tidak ada task yang bisa masuk (Cek Precedence/Cycle Time)"
             
             stations.append(current_station)
             current_station = {'id': len(stations) + 1, 'tasks': [], 'time_left': cycle_time}

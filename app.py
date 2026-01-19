@@ -5,6 +5,8 @@ import io
 import streamlit.components.v1 as components
 import base64
 import re
+#Tambahan Revisi
+from Flow import create_line_flow, create_precedence_diagram
 
 # Import fungsi perhitungan metode
 from methods.lcr import solve_lcr
@@ -35,7 +37,7 @@ st.divider()
 
 # SIDEBAR: INPUT 
 st.sidebar.header("1. Input Data")
-uploaded_file = st.sidebar.file_uploader("Upload Excel (.xlsx) Note: Pastikan Data mengandung 3 Kolom (Task, Time, Precedencor).", type=["xlsx"])
+uploaded_file = st.sidebar.file_uploader("Upload Excel (.xlsx) Note: Pastikan Data mengandung 3 Kolom (Task, Time, Precedence, dan Description (Optional)).", type=["xlsx"])
 
 # (Input API Key Gimita )
 
@@ -85,15 +87,47 @@ if uploaded_file is not None:
             # Buat copy data untuk ditampilkan
             df_view = pd.DataFrame(data)
             
-            # Rapikan tampilan Predecessors (List -> String)
-            df_view['Predecessors'] = df_view['Predecessors'].apply(lambda x: ", ".join(x) if x else "-")
+            # Rapikan tampilan Precedence (List -> String)
+            df_view['Precedence'] = df_view['Precedence'].apply(lambda x: ", ".join(x) if x else "-")
             
             # Atur urutan kolom agar enak dilihat
-            cols_order = ['Task', 'Description', 'Time', 'Predecessors']
+            cols_order = ['Task', 'Description', 'Time', 'Precedence']
             # Hanya ambil kolom yang benar-benar ada
             cols_to_show = [c for c in cols_order if c in df_view.columns]
             
             st.dataframe(df_view[cols_to_show], width=None, use_container_width=True)
+
+        #Tambahan Revisi (Visual Diagram Presedence Untuk data imput)
+
+        with st.expander(" Lihat Precedence Diagram data imput", expanded=False):
+            st.caption("Visualisasi Precedence Diagram tugas sebelum perhitungan.")
+            
+            # 1. Buat 
+            pdm_graph = create_precedence_diagram(data)
+            
+            try:
+                # Render SVG untuk Tampilan
+                pdm_svg = pdm_graph.pipe(format='svg').decode('utf-8')
+                # Bersihkan width/height agar responsif
+                pdm_svg = re.sub(r'(width|height)="[^"]*"', '', pdm_svg)
+                
+                # Render PNG untuk Download
+                pdm_png = pdm_graph.pipe(format='png')
+                pdm_b64 = base64.b64encode(pdm_png).decode("utf-8")
+
+                # Tampilkan
+                st.image(pdm_png, caption="Precedence Diagram", use_container_width=False, width=None)
+                
+                # Tombol Download
+                href = f'<a href="data:image/png;base64,{pdm_b64}" download="precedence_diagram.png" style="text-decoration: none; padding: 10px 20px; background-color: #4CAF50; color: white; border-radius: 5px; font-weight: bold;">Download Diagram</a>'
+                st.markdown(href, unsafe_allow_html=True)
+                
+            except Exception as e:
+                st.error(f"Gagal membuat Precedence Diagram: {e}")
+                st.warning("Pastikan 'graphviz' terinstall di sistem (apt-get install graphviz).")
+
+        st.divider()
+        
         # TAMPILAN HASIL 
         hasil = st.session_state['hasil_perhitungan']
         metode = st.session_state['metode_terpilih']
@@ -261,7 +295,7 @@ if uploaded_file is not None:
                         <div class="viz-header">
                             <span class="viz-title">ZOOM & PAN VIEW</span>
                             <a href="data:image/png;base64,{png_b64}" download="line_balancing_result.png" class="btn-dl">
-                                📷 Unduh PNG
+                                Unduh PNG
                             </a>
                         </div>
                         

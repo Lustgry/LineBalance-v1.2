@@ -42,7 +42,7 @@ def load_data(uploaded_file):
                 
             # Sinonim untuk PREDECESSORS
             elif clean_col in ['PREDECESSORS', 'PREDECESSOR', 'PENDAHULU', 'SYARAT', 'PRED']:
-                col_mapping[col] = 'Predecessors'
+                col_mapping[col] = 'Precedence'
                 
             # Sinonim untuk DESKRIPSI
             elif clean_col in ['DESKRIPSI', 'DESCRIPTION', 'DESC', 'KET', 'KETERANGAN', 'NAMA TUGAS']:
@@ -52,7 +52,7 @@ def load_data(uploaded_file):
         df = df.rename(columns=col_mapping)
 
         # 3. Validasi Kolom Wajib
-        required_cols = ['Task', 'Time', 'Predecessors']
+        required_cols = ['Task', 'Time', 'Precedence']
         missing = [c for c in required_cols if c not in df.columns]
         if missing:
             return None, f"Kolom wajib tidak ditemukan: {', '.join(missing)}. Pastikan nama kolom di Excel benar."
@@ -81,7 +81,7 @@ def load_data(uploaded_file):
                     cleaned.append(p_clean)
             return cleaned
 
-        df['Predecessors'] = df['Predecessors'].apply(clean_preds)
+        df['Precedence'] = df['Precedence'].apply(clean_preds)
 
         # 7. Handle Kolom Deskripsi (Opsional)
         if 'Description' not in df.columns:

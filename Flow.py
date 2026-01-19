@@ -1,6 +1,7 @@
 import graphviz
 import html
 import random
+import pandas as pd
 
 def create_line_flow(hasil_perhitungan, data_asli, cycle_time):
     """
@@ -139,8 +140,8 @@ def create_line_flow(hasil_perhitungan, data_asli, cycle_time):
         for t_id in stn['tasks']:
             task_data = next((item for item in data_asli if str(item['Task']) == str(t_id)), None)
             
-            if task_data and 'Predecessors' in task_data:
-                preds = task_data['Predecessors']
+            if task_data and 'Precedence' in task_data:
+                preds = task_data['Precedence']
                 if isinstance(preds, str): 
                     preds = [p.strip() for p in preds.split(',')]
                 
@@ -173,5 +174,82 @@ def create_line_flow(hasil_perhitungan, data_asli, cycle_time):
                                          label=''
                                 )
                                 connections.add(conn)
+    return dot
+
+def create_precedence_diagram(data_asli):
+    """
+    Membuat Precedence Diagram (PDM) Struktur Awal.
+    VERSI FIX: 
+    1. Membersihkan spasi (strip) agar ID cocok.
+    2. Menangani berbagai format Predecessor (List, String, Angka).
+    3. Tanpa Deskripsi (Anti-Error).
+    """
+    # 1. Konfigurasi Graph
+    dot = graphviz.Digraph(comment='Precedence Diagram')
+    dot.attr(rankdir='LR')           # Kiri ke Kanan
+    dot.attr(splines='ortho')        # Garis Siku-siku
+    dot.attr(bgcolor='transparent')  
+    dot.attr(nodesep='0.6')          
+    dot.attr(ranksep='1.0')          
+    
+    # Style Node
+    dot.attr('node', shape='box', style='filled', fillcolor='#1E1E1E', 
+             fontname='Arial', fontcolor='white', penwidth='1', color='#4CAF50')
+    dot.attr('edge', color='#aaaaaa', arrowsize='1.0', penwidth='1.5')
+
+    # --- 2. BUAT NODE (TUGAS) ---
+    # Gunakan Dictionary untuk memastikan ID unik dan bersih
+    valid_tasks = set()
+    
+    for item in data_asli:
+        # PENTING: Ubah ke string dan hapus spasi kiri/kanan
+        t_id = str(item['Task']).strip()
+        
+        # Simpan ID bersih ke database valid
+        valid_tasks.add(t_id)
+        
+        t_time = str(item['Time'])
+        
+        # Tampilan Label (Simpel: ID & Waktu)
+        label_html = f"""<
+        <TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="0">
+            <TR><TD CELLPADDING="6"><B><FONT POINT-SIZE="14">{t_id}</FONT></B></TD></TR>
+            <TR><TD><FONT POINT-SIZE="10" COLOR="#888888">Time: {t_time}</FONT></TD></TR>
+        </TABLE>
+        >"""
+        
+        dot.node(t_id, label=label_html)
+
+    # --- 3. BUAT GARIS HUBUNGAN (EDGE) ---
+    for item in data_asli:
+        # ID Target juga harus dibersihkan
+        current_task = str(item['Task']).strip()
+        
+        # Ambil data raw Predecessors
+        raw_preds = item.get('Precedence', [])
+        clean_preds = []
+
+        # LOGIKA PEMBERSIHAN DATA PREDECESSOR YANG KUAT
+        if isinstance(raw_preds, list):
+            # Jika sudah list, bersihkan setiap elemen
+            clean_preds = [str(x).strip() for x in raw_preds]
+            
+        elif isinstance(raw_preds, str):
+            # Jika string "A, B" atau "A;B"
+            # Ganti titik koma jadi koma, lalu split
+            raw_preds = raw_preds.replace(';', ',')
+            # Split dan hapus item kosong atau strip (-)
+            clean_preds = [x.strip() for x in raw_preds.split(',') if x.strip() not in ['', '-', 'nan', 'None']]
+            
+        elif isinstance(raw_preds, (int, float)):
+            # Jika angka (misal excel membaca sebagai angka)
+            if not pd.isna(raw_preds):
+                clean_preds = [str(int(raw_preds))] # Ubah jadi string angka bulat
+
+        # GAMBAR GARIS
+        for p in clean_preds:
+            # Pastikan p ada di daftar tugas yang valid
+            if p in valid_tasks:
+                dot.edge(p, current_task)
 
     return dot

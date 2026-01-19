@@ -19,7 +19,7 @@ def solve_lcr(tasks, cycle_time):
             if task['Task'] in assigned: continue
             
             # Cek Predecessors
-            preds_ok = all(p in assigned for p in task['Predecessors'])
+            preds_ok = all(p in assigned for p in task['Precedence'])
             # Cek Waktu
             time_ok = task['Time'] <= current_station['time_left']
             
@@ -35,7 +35,7 @@ def solve_lcr(tasks, cycle_time):
             # Berarti tidak ada task yang memenuhi syarat (macet total)
             if len(current_station['tasks']) == 0:
                 remaining = [t['Task'] for t in tasks if t['Task'] not in assigned]
-                return f"Error: Macet pada task {remaining}. Mungkin Cycle Time terlalu kecil atau Predecessor salah."
+                return f"Error: Macet pada task {remaining}. Mungkin Cycle Time terlalu kecil atau Precedence salah."
 
             # Jika stasiun sudah ada isinya tapi tidak muat lagi, buat stasiun baru
             stations.append(current_station)
